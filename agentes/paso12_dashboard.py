@@ -35,7 +35,18 @@ from contexto_tfm import (  # noqa: E402
 )
 from paso12_datos import dec, metricas, resumen_firma, tabla  # noqa: E402
 
-MODELO = "llama-3.3-70b-versatile"
+# Modelo del asistente. El TFM se ejecuto con llama-3.3-70b-versatile, que
+# Groq retiro despues (404 model_not_found); los resultados de curacion en
+# resultados/ se produjeron con aquel modelo y no cambian. Aqui se usa una
+# lista: se prueba en orden y se toma el primero que la cuenta tenga activo,
+# de modo que la retirada de un modelo no vuelva a dejar el chat sin servicio.
+# Se puede forzar uno concreto con la variable de entorno GROQ_MODEL.
+MODELOS_ASISTENTE = [
+    "qwen/qwen3.8-27b",
+    "openai/gpt-oss-120b",
+    "groq/compound-mini",
+]
+MODELO = os.environ.get("GROQ_MODEL") or MODELOS_ASISTENTE[0]
 FIG = os.path.join(BASE_DIR, "figuras_auditoria")
 
 # --------------------------------------------------------------------------
@@ -796,11 +807,23 @@ if st.session_state.capitulo == "asistente":
                 # Historial acotado (ultimos 8 = 4 turnos usuario/asistente):
                 # mantiene contexto conversacional sin disparar el consumo.
                 # max_tokens=500 acota la longitud de la respuesta.
-                flujo = cliente.chat.completions.create(
-                    messages=([{"role": "system", "content": sistema}]
-                              + st.session_state.mensajes[-8:]),
-                    model=MODELO, temperature=0.0, max_tokens=500, stream=True,
-                )
+                msgs = ([{"role": "system", "content": sistema}]
+                        + st.session_state.mensajes[-8:])
+                candidatos = ([os.environ["GROQ_MODEL"]]
+                              if os.environ.get("GROQ_MODEL")
+                              else MODELOS_ASISTENTE)
+                flujo = ultimo = None
+                for nombre in candidatos:
+                    try:
+                        flujo = cliente.chat.completions.create(
+                            messages=msgs, model=nombre, temperature=0.0,
+                            max_tokens=500, stream=True,
+                        )
+                        break
+                    except Exception as err:      # modelo retirado o sin acceso
+                        ultimo = err
+                if flujo is None:
+                    raise ultimo
                 texto = st.write_stream(
                     t.choices[0].delta.content or "" for t in flujo)
                 st.session_state.mensajes.append(

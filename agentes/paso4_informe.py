@@ -5,6 +5,12 @@ from sklearn.decomposition import PCA
 import numpy as np
 from dotenv import load_dotenv
 
+# Modelo del LLM. Los resultados publicados en resultados/ se generaron con
+# "llama-3.3-70b-versatile", que Groq retiro posteriormente (404
+# model_not_found). Para volver a ejecutar el paso se toma un modelo vigente;
+# se puede fijar otro con la variable de entorno GROQ_MODEL.
+MODELO_LLM = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b")
+
 # Cargar configuración
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -92,7 +98,7 @@ Respuesta en formato texto, estilo académico, conciso pero claro.
             client = Groq(api_key=GROQ_API_KEY)
             completion = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
-                model="llama-3.3-70b-versatile",
+                model=MODELO_LLM,
                 temperature=0.3
             )
             informe_texto = completion.choices[0].message.content

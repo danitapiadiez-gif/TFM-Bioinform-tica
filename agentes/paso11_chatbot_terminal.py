@@ -29,7 +29,9 @@ from contexto_tfm import (  # noqa: E402
     prompt_sistema,
 )
 
-MODELO = "llama-3.3-70b-versatile"
+# Groq retiro llama-3.3-70b-versatile (el modelo con el que se ejecuto la
+# curacion del TFM). Se puede forzar otro con la variable GROQ_MODEL.
+MODELO = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b")
 TEMPERATURA = 0.0          # consulta de datos: sin creatividad
 MAX_HISTORIAL = 12         # turnos conservados
 

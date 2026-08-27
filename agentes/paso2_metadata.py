@@ -2,6 +2,12 @@ import pandas as pd
 import numpy as np
 import os
 
+# Modelo del LLM. Los resultados publicados en resultados/ se generaron con
+# "llama-3.3-70b-versatile", que Groq retiro posteriormente (404
+# model_not_found). Para volver a ejecutar el paso se toma un modelo vigente;
+# se puede fijar otro con la variable de entorno GROQ_MODEL.
+MODELO_LLM = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b")
+
 # Raiz del proyecto, derivada de la ubicacion de este fichero: el pipeline ya no
 # depende de que los datos esten en el escritorio de una maquina concreta.
 _RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -110,7 +116,7 @@ RESPONDE ÚNICAMENTE CON UN OBJETO JSON:
             client = Groq(api_key=GROQ_API_KEY)
             completion = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
-                model="llama-3.3-70b-versatile",
+                model=MODELO_LLM,
                 temperature=0, 
                 response_format={"type": "json_object"}
             )
